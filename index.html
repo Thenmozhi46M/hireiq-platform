@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HireIQ - Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-indigo-600 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold">🚀 HireIQ Platform</h1>
+            <div class="space-x-4">
+                <button onclick="switchTab('jobs')" class="px-3 py-2 rounded hover:bg-indigo-700 font-medium">Browse Jobs</button>
+                <button onclick="switchTab('auth')" class="px-3 py-2 rounded hover:bg-indigo-700 font-medium">Login / Signup</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="max-w-5xl mx-auto px-6 py-8">
+
+        <!-- JOBS & APPLICATIONS TAB -->
+        <section id="jobs-tab" class="space-y-8">
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h2 class="text-xl font-semibold mb-4 text-indigo-600">Available Job Openings</h2>
+                <div id="job-list" class="space-y-4">
+                    <p class="text-gray-500">Loading jobs...</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h2 class="text-xl font-semibold mb-4 text-indigo-600">Apply for a Job</h2>
+                <form id="apply-form" onsubmit="submitApplication(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Job ID</label>
+                        <input type="number" id="apply-job-id" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                        <input type="text" id="apply-name" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                        <input type="email" id="apply-email" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Resume Text & Skills</label>
+                        <textarea id="apply-resume" rows="4" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Paste resume details here (e.g. Python, FastAPI, SQL)..."></textarea>
+                    </div>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Submit Application</button>
+                </form>
+                <p id="apply-result" class="mt-4 text-sm font-medium"></p>
+            </div>
+        </section>
+
+        <!-- AUTH TAB -->
+        <section id="auth-tab" class="hidden space-y-8 max-w-md mx-auto">
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h2 class="text-xl font-semibold mb-4 text-indigo-600">Account Access</h2>
+                <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="auth-email" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="auth-password" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div class="flex space-x-4 pt-2">
+                        <button type="button" onclick="loginUser()" class="flex-1 bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700">Login</button>
+                        <button type="button" onclick="signupUser()" class="flex-1 bg-gray-800 text-white py-2 rounded-md hover:bg-gray-900">Sign Up</button>
+                    </div>
+                </form>
+                <p id="auth-result" class="mt-4 text-sm font-medium"></p>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+
+        function switchTab(tab) {
+            document.getElementById('jobs-tab').classList.toggle('hidden', tab !== 'jobs');
+            document.getElementById('auth-tab').classList.toggle('hidden', tab !== 'auth');
+            if (tab === 'jobs') fetchJobs();
+        }
+
+        async function fetchJobs() {
+            try {
+                const res = await fetch(`${API_URL}/jobs/`);
+                const jobs = await res.json();
+                const container = document.getElementById('job-list');
+                if (jobs.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500">No job openings available right now.</p>';
+                    return;
+                }
+                container.innerHTML = jobs.map(j => `
+                    <div class="p-4 border border-gray-100 bg-gray-50 rounded-md">
+                        <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-semibold">ID: ${j.id}</span>
+                        <h3 class="text-lg font-bold text-gray-900 mt-1">${j.title}</h3>
+                        <p class="text-sm text-gray-600">${j.company} • ${j.location}</p>
+                        <p class="text-sm text-gray-700 mt-2">${j.description}</p>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function submitApplication(e) {
+            e.preventDefault();
+            const data = {
+                job_id: parseInt(document.getElementById('apply-job-id').value),
+                candidate_name: document.getElementById('apply-name').value,
+                candidate_email: document.getElementById('apply-email').value,
+                resume_text: document.getElementById('apply-resume').value
+            };
+            const res = await fetch(`${API_URL}/applications/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const resultBox = document.getElementById('apply-result');
+            if (res.ok) {
+                resultBox.className = "mt-4 text-sm font-medium text-green-600";
+                resultBox.innerText = "Application submitted successfully!";
+                document.getElementById('apply-form').reset();
+            } else {
+                const err = await res.json();
+                resultBox.className = "mt-4 text-sm font-medium text-red-600";
+                resultBox.innerText = "Error: " + (err.detail || "Failed to submit");
+            }
+        }
+
+        async function signupUser() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const res = await fetch(`${API_URL}/signup/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, role: "candidate" })
+            });
+            const box = document.getElementById('auth-result');
+            if (res.ok) {
+                box.className = "mt-4 text-sm font-medium text-green-600";
+                box.innerText = "Account created successfully! You can now log in.";
+            } else {
+                const err = await res.json();
+                box.className = "mt-4 text-sm font-medium text-red-600";
+                box.innerText = "Error: " + JSON.stringify(err.detail);
+            }
+        }
+
+        async function loginUser() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const res = await fetch(`${API_URL}/login/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const box = document.getElementById('auth-result');
+            if (res.ok) {
+                const data = await res.json();
+                box.className = "mt-4 text-sm font-medium text-green-600";
+                box.innerText = "Logged in successfully! Token received.";
+                console.log("Token:", data.access_token);
+            } else {
+                box.className = "mt-4 text-sm font-medium text-red-600";
+                box.innerText = "Invalid email or password.";
+            }
+        }
+
+        // Load jobs on initial page load
+        fetchJobs();
+    </script>
+</body>
+</html>
